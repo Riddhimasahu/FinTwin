@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinTwin | AI-Powered Personal Finance Advisor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <style>
+        /* ---------- Global Styles ---------- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            background: #f4f7fb;
+            color: #333;
+            line-height: 1.6;
+        }
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+        img {
+            max-width: 100%;
+        }
+
+        /* ---------- Navbar ---------- */
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 5%;
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        nav .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #4CAF50;
+        }
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+        nav ul li a {
+            font-weight: 500;
+            transition: color 0.3s;
+            cursor: pointer;
+
+        }
+        nav ul li a:hover {
+            color: #4CAF50;
+        }
+        .btn-primary {
+            padding: 0.7rem 1.5rem;
+            background: #191919;
+            color: #fff;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition :background 0.3s;
+        }
+        .btn-primary:hover {
+            background: #4b4c4b;
+        }
+
+        /* ---------- Hero Section ---------- */
+        .hero {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 5rem 2rem;
+            background: linear-gradient(135deg, #eef2ff 0%, #dff5f3 100%);
+        }
+        .hero h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #222;
+        }
+        .hero p {
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin-bottom: 2rem;
+            color: #555;
+        }
+
+        /* ---------- Features Section ---------- */
+        .features {
+            padding: 5rem 5%;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+        .feature-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s, opacity 0.6s, transform 0.6s;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .feature-card.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .feature-card i {
+            font-size: 2rem;
+            color: #4CAF50;
+            margin-bottom: 1rem;
+        }
+        .feature-card h3 {
+            margin-bottom: 1rem;
+            color: #4CAF50;
+        }
+        .feature-card p {
+            color: #555;
+        }
+        /* ---------- How It Works Section ---------- */
+        #how-it-works {
+            padding: 5rem 5%;
+            background: #eef2ff;
+        }
+        #how-it-works h2 {
+            text-align: center;
+            margin-bottom: 3rem;
+            color: #222;
+        }
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+        .step-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        .step-card i {
+            font-size: 2rem;
+            color: #4CAF50;
+            margin-bottom: 1rem;
+        }
+        .step-card h3 {
+            margin-bottom: 1rem;
+            color: #4CAF50;
+        }
+        .step-card p {
+            color: #555;
+        }
+        /* ---------- CTA Section ---------- */
+        .cta {
+            text-align: center;
+            padding: 5rem 2rem;
+            background: #4CAF50;
+            color: #fff;
+        }
+        .cta h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        .cta p {
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+
+        /* ---------- Footer ---------- */
+        footer {
+            background: #fff;
+            padding: 2rem 5%;
+            text-align: center;
+            color: #555;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+            .cta h2 {
+                font-size: 1.7rem;
+            }
+        }
+        /* ---------- Section Headings ---------- */
+        .section-heading {
+            text-align: center;
+            padding: 4rem 2rem 1rem;
+        }
+
+        .section-heading h2 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #222;
+            margin-bottom: 0.8rem;
+        }
+
+        .section-heading p {
+            max-width: 600px;
+            margin: 0 auto;
+            font-size: 1.05rem;
+            color: #555;
+        }
+
+        /* ---------- Mode Preview Section ---------- */
+.mode-preview {
+    padding: 5rem 2rem;
+    text-align: center;
+    background: linear-gradient(135deg, #f9fafc, #eef2ff);
+}
+
+.mode-preview h2 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 0.8rem;
+}
+
+.mode-preview p {
+    max-width: 650px;
+    margin: 0 auto 2.5rem;
+    color: #555;
+}
+
+.toggle-container {
+    display: inline-flex;
+    background: #fff;
+    border-radius: 50px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    margin-bottom: 2.5rem;
+}
+
+.toggle-btn {
+    padding: 0.8rem 2rem;
+    border: none;
+    background: transparent;
+    font-size: 1rem;
+    cursor: pointer;
+    border-radius: 50px;
+    transition: all 0.3s;
+}
+
+.toggle-btn.active {
+    background: #4CAF50;
+    color: #fff;
+}
+
+.mode-card {
+    max-width: 500px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 2.5rem;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    text-align: left;
+    transition: all 0.3s ease;
+}
+
+.mode-card h3 {
+    color: #4CAF50;
+    margin-bottom: 1.5rem;
+}
+
+.mode-card ul {
+    list-style: none;
+}
+
+.mode-card li {
+    margin-bottom: 0.8rem;
+    color: #444;
+    font-size: 1rem;
+}
+
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav>
+        <div class="logo">FinTwin</div>
+        <ul>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#for-whom">For Whom</a></li>
+    <li><a href="#how-it-works">How It Works</a></li>
+    <li><a href="#cta">Get Started</a></li>
+</ul>
+
+        <a href="signup.html" class="btn-primary nav-btn">Sign Up</a>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <h1>AI-Powered Personal Finance & Investment Advisor</h1>
+        <p>Understand your lifestyle, achieve your financial goals, and invest smartly — all personalized for students and working professionals.</p>
+        <button class="btn-primary" onclick="handleGetStarted()">Build Your Financial Future</button>
+    </section>
+
+    <!-- Features Section -->
+    <!-- Features Heading -->
+    <section class="section-heading">
+        <h2>Powerful Features</h2>
+        <p>Everything you need to analyze, plan, invest, and achieve your financial goals — intelligently.</p>
+    </section>
+
+    <section id="features" class="features">
+        <div class="feature-card">
+            <h3>Financial Analysis</h3>
+            <p>Upload your bank statements or enter expenses manually. Get categorized spending breakdowns instantly.</p>
+        </div>
+        <div class="feature-card">
+            <h3>Goal Feasibility Check</h3>
+            <p>Check if your financial goals are achievable and get actionable suggestions to stay on track.</p>
+        </div>
+        <div class="feature-card">
+            <h3>Personalized Guidance</h3>
+            <p>Advice tailored for students and working professionals based on income, lifestyle, and risk preferences.</p>
+        </div>
+        <div class="feature-card">
+            <h3>Investment Recommendations</h3>
+            <p>Receive short-term and long-term investment options based on your goals, risk profile, and timeline.</p>
+        </div>
+        <div class="feature-card">
+            <h3>Financial Digital Twin</h3>
+            <p>Track your spending, savings, and goal progress in real-time with a virtual model of your finances.</p>
+        </div>
+        <div class="feature-card">
+            <h3>Time-Based Progress</h3>
+            <p>Smart notifications show you if you are on track, behind, or ahead in your financial journey.</p>
+        </div>
+        <div class="feature-card">
+            <h3>Scenario Simulation</h3>
+            <p>Experiment with different savings or investment strategies and see how your financial goals are affected in real-time.</p>
+        </div>
+        <div class="feature-card">
+            <h3>Smart Alerts & Notifications</h3>
+            <p>Receive actionable reminders and congratulatory messages to stay on track and motivated toward your goals.</p>
+        </div>
+    </section>
+    <!-- User Mode Preview Section -->
+<section class="mode-preview" id="for-whom">
+    <h2>Built for Students & Working Professionals</h2>
+    <p>Switch modes to see how FinTwin adapts its advice, goals, and investment strategy.</p>
+
+    <div class="toggle-container">
+        <button class="toggle-btn active" id="studentBtn">🎓 Student</button>
+        <button class="toggle-btn" id="proBtn">💼 Professional</button>
+    </div>
+
+    <div class="mode-card" id="modeCard">
+        <h3 id="modeTitle">Student Mode</h3>
+        <ul id="modeList">
+            <li>✔ Focus on saving & financial discipline</li>
+            <li>✔ Low-risk investment suggestions</li>
+            <li>✔ Short-term & emergency goals</li>
+            <li>✔ Simple, educational guidance</li>
+        </ul>
+    </div>
+</section>
+
+     <!-- How It Works Section -->
+    <section id="how-it-works">
+        <h2>How It Works</h2>
+        <div class="steps">
+            <div class="step-card"><i class="fas fa-upload"></i>
+                <h3>1. Upload & Input Data</h3>
+                <p>Upload bank statements, enter expenses, and provide basic profile info.</p>
+            </div>
+            <div class="step-card"><i class="fas fa-calculator"></i>
+                <h3>2. Analysis & Insights</h3>
+                <p>The system categorizes expenses, tracks spending patterns, and creates your financial report.</p>
+            </div>
+            <div class="step-card"><i class="fas fa-bullseye"></i>
+                <h3>3. Goal & Investment Planning</h3>
+                <p>Check goal feasibility, receive personalized advice, and explore suitable investment options.</p>
+            </div>
+            <div class="step-card"><i class="fas fa-rocket"></i>
+                <h3>4. Track & Achieve</h3>
+                <p>Monitor progress with your financial digital twin and stay on track with smart notifications.</p>
+            </div>
+        </div>
+    </section>
+    <!-- CTA Section -->
+    <section id="cta" class="cta">
+        <h2>Start Your Journey Towards Financial Freedom</h2>
+        <p>Sign up now and let FinTwin guide you step-by-step to achieve your goals and invest wisely.</p>
+        <button class="btn-primary" onclick="handleGetStarted()">Get Started</button>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        &copy; 2025 FinTwin. All rights reserved.
+    </footer>
+    <!-- ---------- JS for Animation ---------- -->
+    <script>
+        const cards = document.querySelectorAll('.feature-card');
+
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if(entry.isIntersecting){
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, {threshold: 0.2});
+
+        cards.forEach(card => observer.observe(card));
+        const studentBtn = document.getElementById("studentBtn");
+    const proBtn = document.getElementById("proBtn");
+    const modeTitle = document.getElementById("modeTitle");
+    const modeList = document.getElementById("modeList");
+
+    studentBtn.onclick = () => {
+        studentBtn.classList.add("active");
+        proBtn.classList.remove("active");
+
+        modeTitle.innerText = "Student Mode";
+        modeList.innerHTML = `
+            <li>✔ Focus on saving & financial discipline</li>
+            <li>✔ Low-risk investment suggestions</li>
+            <li>✔ Short-term & emergency goals</li>
+            <li>✔ Simple, educational guidance</li>
+        `;
+    };
+
+    proBtn.onclick = () => {
+        proBtn.classList.add("active");
+        studentBtn.classList.remove("active");
+
+        modeTitle.innerText = "Professional Mode";
+        modeList.innerHTML = `
+            <li>✔ Focus on wealth creation</li>
+            <li>✔ Long-term & SIP-based investments</li>
+            <li>✔ Tax-saving & growth strategies</li>
+            <li>✔ Strategic, goal-oriented guidance</li>
+        `;
+    };
+    function handleGetStarted() {
+        const user = sessionStorage.getItem("loggedInUser");
+        if (user) {
+            window.location.href = "dashboard.html";
+        } else {
+            window.location.href = "signin.html";
+        }
+    }
+    </script>
+
+</body>
+</html>

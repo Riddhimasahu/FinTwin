@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Home | FinTwin</title>
+</head>
+<body>
+
+<nav style="display:flex; justify-content:space-between;">
+    <h3>FinTwin</h3>
+    <div>
+        <span id="username"></span>
+        <button onclick="logout()">Logout</button>
+    </div>
+</nav>
+
+<h2>Welcome to Your Dashboard 🚀</h2>
+
+<script>
+    const user = JSON.parse(sessionStorage.getItem("loggedInUser"));
+
+    if (!user) {
+        window.location.href = "signin.html";
+    } else {
+        document.getElementById("username").innerText = user.name;
+    }
+
+    function logout() {
+        sessionStorage.removeItem("loggedInUser");
+        window.location.href = "index.html";
+    }
+</script>
+
+</body>
+</html>
