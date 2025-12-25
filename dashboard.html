@@ -65,11 +65,16 @@
 </section>
 
 <!-- QUICK ACTIONS -->
+
 <h2 class="section-title">⚡ Quick Actions</h2>
 <div class="actions">
     <button id="quickAddExpense">Add Expense</button>
     <button id="quickCreateGoal">Create Goal</button>
     <button id="quickViewInvestments">View Investments</button>
+    <button class="quick-btn" onclick="openIncomeModal()">
+    💰 Add Monthly Income
+</button>
+
 </div>
 
 
@@ -161,7 +166,19 @@
 </section>
 
 </main>
+<div id="incomeModal" class="modal hidden">
+    <div class="modal-content">
+        <h3>Enter Monthly Income</h3>
+        <input type="number" id="incomeInput" placeholder="e.g. 50000" />
+        <div class="modal-actions">
+            <button onclick="saveIncome()">Save</button>
+            <button onclick="closeIncomeModal()">Cancel</button>
+        </div>
+    </div>
+</div>
 
 <script src="dashboard.js"></script>
+
 </body>
 </html>
+
