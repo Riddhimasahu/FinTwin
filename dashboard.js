@@ -154,20 +154,52 @@ function autoCategorize(desc) {
     return "Others";
 }
 function importTransactions(transactions) {
-    transactions.forEach(txn => {
-        if (txn.type !== "Expense") return;
 
-        expenses.push({
-            title: txn.description,
-            amount: txn.amount,
-            category: txn.category,
-            date: txn.date
-        });
+    let totalIncomeFromPDF = 0;
+
+    transactions.forEach(txn => {
+
+        if (txn.type === "Expense") {
+            expenses.push({
+                title: txn.description,
+                amount: txn.amount,
+                category: txn.category,
+                date: txn.date
+            });
+        }
+
+        if (txn.type === "Income") {
+            totalIncomeFromPDF += txn.amount;
+        }
     });
 
+    // ✅ SAVE EXPENSES
     localStorage.setItem(expenseKey, JSON.stringify(expenses));
-    renderExpenses();
+
+    // ✅ SAVE INCOME (this was missing)
+    if (totalIncomeFromPDF > 0) {
+        const existingIncome =
+            JSON.parse(localStorage.getItem(incomeKey)) || { monthlyIncome: 0 };
+
+        existingIncome.monthlyIncome += totalIncomeFromPDF;
+
+        localStorage.setItem(
+            incomeKey,
+            JSON.stringify(existingIncome)
+        );
+    }
+
+    // 🔁 FULL UI UPDATE
+    localStorage.setItem(expenseKey, JSON.stringify(expenses));
+
+renderExpenses();          // handles expense UI
+updateSummaryCards();      // 🔥 income + expense + savings
+updateLowerSummaryCards();
+generateSmartInsights();
+renderExpenseChart();      // 🔥 chart must render even if only PDF data
+
 }
+
 
 let extractedTransactions = [];
 
@@ -257,6 +289,8 @@ document
 });
 
 async function parsePDF(file) {
+    let transactions = [];
+
     try {
         const arrayBuffer = await file.arrayBuffer();
         const typedArray = new Uint8Array(arrayBuffer);
@@ -278,9 +312,14 @@ async function parsePDF(file) {
 
         console.log("📄 Extracted PDF Text:", fullText);
 
-        extractedTransactions = extractTransactionsFromText(fullText);
+        transactions = extractTransactionsFromText(fullText);
 
-        console.log("✅ Parsed PDF rows:", extractedTransactions);
+        if (!transactions || transactions.length === 0) {
+            alert("Unable to read PDF. Please upload a text-based bank statement.");
+            return;
+        }
+
+        extractedTransactions = transactions;
 
         showPreview(extractedTransactions);
         document.getElementById("uploadStatus").innerText =
@@ -288,9 +327,11 @@ async function parsePDF(file) {
 
     } catch (err) {
         console.error("❌ PDF parsing failed:", err);
-        alert("Unable to read PDF. Please upload a text-based bank statement.");
+        // alert("Unable to read PDF. Please upload a text-based bank statement.");
     }
 }
+
+
 
 function extractTransactionsFromText(text) {
     const lines = text
@@ -423,240 +464,240 @@ function generateAISpendingSummary(transactions) {
     return summary;
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+// document.addEventListener("DOMContentLoaded", () => {
 
-    const fileInput = document.getElementById("statementUpload");
-    const previewBody = document.getElementById("previewBody");
-    const confirmBtn = document.getElementById("confirmImport");
+//     const fileInput = document.getElementById("statementUpload");
+//     const previewBody = document.getElementById("previewBody");
+//     const confirmBtn = document.getElementById("confirmImport");
 
-    let parsedTransactions = [];
+//     let parsedTransactions = [];
 
-    fileInput.addEventListener("change", () => {
-        const file = fileInput.files[0];
-        if (!file) return;
+//     fileInput.addEventListener("change", () => {
+//         const file = fileInput.files[0];
+//         if (!file) return;
 
-        console.log("📄 Uploaded file:", file.name, file.type);
+//         console.log("📄 Uploaded file:", file.name, file.type);
 
-        previewBody.innerHTML = "";
-        parsedTransactions = [];
-        confirmBtn.disabled = true;
+//         previewBody.innerHTML = "";
+//         parsedTransactions = [];
+//         confirmBtn.disabled = true;
 
-        if (file.type === "text/csv") {
-            parseCSV(file);
-        } else {
-            alert("Only CSV supported for now");
-        }
-    });
+//         if (file.type === "text/csv") {
+//             parseCSV(file);
+//         } else {
+//             alert("Only CSV supported for now");
+//         }
+//     });
 
-    function parseCSV(text) {
-    console.log("📄 RAW CSV TEXT ↓↓↓");
-    console.log(text);
+//     function parseCSV(text) {
+//     console.log("📄 RAW CSV TEXT ↓↓↓");
+//     console.log(text);
 
-    // Remove BOM + normalize minus
-    text = text
-        .replace(/\uFEFF/g, "")
-        .replace(/–/g, "-");
+//     // Remove BOM + normalize minus
+//     text = text
+//         .replace(/\uFEFF/g, "")
+//         .replace(/–/g, "-");
 
-    const lines = text
-        .split(/\r?\n/)
-        .map(l => l.trim())
-        .filter(Boolean);
+//     const lines = text
+//         .split(/\r?\n/)
+//         .map(l => l.trim())
+//         .filter(Boolean);
 
-    if (lines.length === 0) return [];
+//     if (lines.length === 0) return [];
 
-    // 🔍 AUTO-DETECT DELIMITER
-    let delimiter = ",";
-    if (lines[0].includes("\t")) delimiter = "\t";
-    else if (lines[0].includes(";")) delimiter = ";";
+//     // 🔍 AUTO-DETECT DELIMITER
+//     let delimiter = ",";
+//     if (lines[0].includes("\t")) delimiter = "\t";
+//     else if (lines[0].includes(";")) delimiter = ";";
 
-    console.log("🧩 Detected delimiter:", JSON.stringify(delimiter));
+//     console.log("🧩 Detected delimiter:", JSON.stringify(delimiter));
 
-    const rows = [];
+//     const rows = [];
 
-    lines.forEach((line, index) => {
+//     lines.forEach((line, index) => {
 
-        // Skip header
-        if (index === 0 && /date/i.test(line)) return;
+//         // Skip header
+//         if (index === 0 && /date/i.test(line)) return;
 
-        const cols = line.split(delimiter).map(c => c.trim());
+//         const cols = line.split(delimiter).map(c => c.trim());
 
-        if (cols.length < 2) return;
+//         if (cols.length < 2) return;
 
-        const date = cols[0].replace(/"/g, "");
+//         const date = cols[0].replace(/"/g, "");
 
-        let description = "";
-        let amount = null;
+//         let description = "";
+//         let amount = null;
 
-        cols.forEach(col => {
-            let v = col
-                .replace(/₹|,/g, "")
-                .replace(/"/g, "")
-                .trim();
+//         cols.forEach(col => {
+//             let v = col
+//                 .replace(/₹|,/g, "")
+//                 .replace(/"/g, "")
+//                 .trim();
 
-            // (123.45) format
-            if (/^\(\d+(\.\d+)?\)$/.test(v)) {
-                v = "-" + v.replace(/[()]/g, "");
-            }
+//             // (123.45) format
+//             if (/^\(\d+(\.\d+)?\)$/.test(v)) {
+//                 v = "-" + v.replace(/[()]/g, "");
+//             }
 
-            if (!isNaN(v) && v !== "") {
-                amount = parseFloat(v);
-            } else {
-                description += " " + col;
-            }
-        });
+//             if (!isNaN(v) && v !== "") {
+//                 amount = parseFloat(v);
+//             } else {
+//                 description += " " + col;
+//             }
+//         });
 
-        if (!date || amount === null) return;
+//         if (!date || amount === null) return;
 
-        rows.push({
-            date,
-            description: description.trim(),
-            amount: Math.abs(amount),
-            type: amount < 0 ? "Expense" : "Income"
-        });
-    });
+//         rows.push({
+//             date,
+//             description: description.trim(),
+//             amount: Math.abs(amount),
+//             type: amount < 0 ? "Expense" : "Income"
+//         });
+//     });
 
-    console.log("✅ Parsed CSV rows:", rows);
-    return rows;
-}
+//     console.log("✅ Parsed CSV rows:", rows);
+//     return rows;
+// }
 
-async function handlePDF(file) {
-    console.log("📘 Parsing PDF...");
+// async function handlePDF(file) {
+//     console.log("📘 Parsing PDF...");
 
-    const arrayBuffer = await file.arrayBuffer();
-    const loadingTask = pdfjsLib.getDocument({
-  data: typedArray,
-  disableWorker: false
-});
+//     const arrayBuffer = await file.arrayBuffer();
+//     const loadingTask = pdfjsLib.getDocument({
+//   data: typedArray,
+//   disableWorker: false
+// });
 
-   try {
-  const pdf = await pdfjsLib.getDocument({
-    data: typedArray,
-    disableWorker: false
-  }).promise;
-  // normal parsing
-} catch (e) {
-  console.warn("⚠️ Worker failed, using fallback", e);
+//    try {
+//   const pdf = await pdfjsLib.getDocument({
+//     data: typedArray,
+//     disableWorker: false
+//   }).promise;
+//   // normal parsing
+// } catch (e) {
+//   console.warn("⚠️ Worker failed, using fallback", e);
 
-  const pdf = await pdfjsLib.getDocument({
-    data: typedArray,
-    disableWorker: true
-  }).promise;
-}
-
-
-
-    let fullText = "";
-
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-        const page = await pdf.getPage(pageNum);
-        const content = await page.getTextContent();
-
-        const pageText = content.items
-            .map(item => item.str)
-            .join(" ");
-
-        fullText += "\n" + pageText;
-    }
-
-    console.log("📄 Extracted PDF text ↓↓↓");
-    console.log(fullText);
-
-    const rows = parsePDFText(fullText);
-    console.log("✅ Parsed PDF rows:", rows);
-
-    renderTransactionPreview(rows);
-}
-function parsePDFText(text) {
-    const lines = text
-        .split(/\n/)
-        .map(l => l.trim())
-        .filter(Boolean);
-
-    const transactions = [];
-
-    lines.forEach(line => {
-
-        // Detect date (dd-mm-yyyy or dd/mm/yyyy)
-        const dateMatch = line.match(/(\d{2}[\/\-]\d{2}[\/\-]\d{4})/);
-        if (!dateMatch) return;
-
-        // Detect amount
-        const amountMatch = line.match(/(-?\(?₹?\d{1,3}(?:,\d{3})*(?:\.\d{2})\)?)/);
-        if (!amountMatch) return;
-
-        let amountStr = amountMatch[0]
-            .replace(/[₹,]/g, "")
-            .replace(/[()]/g, "");
-
-        let amount = parseFloat(amountStr);
-        if (isNaN(amount)) return;
-
-        const type = amount < 0 ? "Expense" : "Income";
-
-        const description = line
-            .replace(dateMatch[0], "")
-            .replace(amountMatch[0], "")
-            .trim();
-
-        transactions.push({
-            date: dateMatch[0],
-            description,
-            amount: Math.abs(amount),
-            type
-        });
-    });
-
-    return transactions;
-}
-document.getElementById("statementFile").addEventListener("change", e => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    console.log("📄 Uploaded file:", file.name, file.type);
-
-    if (file.type === "text/csv") {
-        const reader = new FileReader();
-        reader.onload = e => {
-            const rows = parseCSV(e.target.result);
-            renderTransactionPreview(rows);
-        };
-        reader.readAsText(file);
-    }
-
-    else if (file.type === "application/pdf") {
-        handlePDF(file);
-    }
-
-    else {
-        alert("Unsupported file type");
-    }
-});
+//   const pdf = await pdfjsLib.getDocument({
+//     data: typedArray,
+//     disableWorker: true
+//   }).promise;
+// }
 
 
 
+//     let fullText = "";
 
-    function renderPreview(transactions) {
-        previewBody.innerHTML = "";
+//     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+//         const page = await pdf.getPage(pageNum);
+//         const content = await page.getTextContent();
 
-        transactions.forEach(tx => {
-            const row = document.createElement("tr");
+//         const pageText = content.items
+//             .map(item => item.str)
+//             .join(" ");
 
-            row.innerHTML = `
-                <td>${tx.date}</td>
-                <td>${tx.description}</td>
-                <td>₹${tx.amount}</td>
-                <td>${tx.type}</td>
-            `;
+//         fullText += "\n" + pageText;
+//     }
 
-            previewBody.appendChild(row);
-        });
+//     console.log("📄 Extracted PDF text ↓↓↓");
+//     console.log(fullText);
 
-        if (transactions.length > 0) {
-            confirmBtn.disabled = false;
-        }
-    }
+//     const rows = parsePDFText(fullText);
+//     console.log("✅ Parsed PDF rows:", rows);
 
-});
+//     renderTransactionPreview(rows);
+// }
+// function parsePDFText(text) {
+//     const lines = text
+//         .split(/\n/)
+//         .map(l => l.trim())
+//         .filter(Boolean);
+
+//     const transactions = [];
+
+//     lines.forEach(line => {
+
+//         // Detect date (dd-mm-yyyy or dd/mm/yyyy)
+//         const dateMatch = line.match(/(\d{2}[\/\-]\d{2}[\/\-]\d{4})/);
+//         if (!dateMatch) return;
+
+//         // Detect amount
+//         const amountMatch = line.match(/(-?\(?₹?\d{1,3}(?:,\d{3})*(?:\.\d{2})\)?)/);
+//         if (!amountMatch) return;
+
+//         let amountStr = amountMatch[0]
+//             .replace(/[₹,]/g, "")
+//             .replace(/[()]/g, "");
+
+//         let amount = parseFloat(amountStr);
+//         if (isNaN(amount)) return;
+
+//         const type = amount < 0 ? "Expense" : "Income";
+
+//         const description = line
+//             .replace(dateMatch[0], "")
+//             .replace(amountMatch[0], "")
+//             .trim();
+
+//         transactions.push({
+//             date: dateMatch[0],
+//             description,
+//             amount: Math.abs(amount),
+//             type
+//         });
+//     });
+
+//     return transactions;
+// }
+// document.getElementById("statementFile").addEventListener("change", e => {
+//     const file = e.target.files[0];
+//     if (!file) return;
+
+//     console.log("📄 Uploaded file:", file.name, file.type);
+
+//     if (file.type === "text/csv") {
+//         const reader = new FileReader();
+//         reader.onload = e => {
+//             const rows = parseCSV(e.target.result);
+//             renderTransactionPreview(rows);
+//         };
+//         reader.readAsText(file);
+//     }
+
+//     else if (file.type === "application/pdf") {
+//         handlePDF(file);
+//     }
+
+//     else {
+//         alert("Unsupported file type");
+//     }
+// });
+
+
+
+
+//     function renderPreview(transactions) {
+//         previewBody.innerHTML = "";
+
+//         transactions.forEach(tx => {
+//             const row = document.createElement("tr");
+
+//             row.innerHTML = `
+//                 <td>${tx.date}</td>
+//                 <td>${tx.description}</td>
+//                 <td>₹${tx.amount}</td>
+//                 <td>${tx.type}</td>
+//             `;
+
+//             previewBody.appendChild(row);
+//         });
+
+//         if (transactions.length > 0) {
+//             confirmBtn.disabled = false;
+//         }
+//     }
+// 
+// });
 
 
 
@@ -994,9 +1035,11 @@ function generateSmartInsights() {
        🚀 INIT
     =============================== */
     renderExpenses();
-    renderGoals();
-    updateSummaryCards();
-    generateSmartInsights();
+renderGoals();
+updateSummaryCards();
+updateLowerSummaryCards();   // 🔥 missing
+renderExpenseChart();        // 🔥 missing
+generateSmartInsights();
 
 
     const addGoalBtn = document.getElementById("addGoalBtn");
@@ -1098,4 +1141,3 @@ window.saveIncome = function () {
 
 
 });
-
