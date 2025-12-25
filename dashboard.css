@@ -753,3 +753,92 @@ body {
     background: #e5e7eb;
 }
 
+
+.statement-upload {
+    background: #ffffff;
+    padding: 22px;
+    border-radius: 16px;
+    margin-top: 30px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.06);
+    margin-bottom: 30px;
+}
+
+.statement-upload h2 {
+    font-size: 18px;
+    margin-bottom: 6px;
+}
+
+.statement-upload .hint {
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 14px;
+}
+
+.statement-upload input {
+    display: block;
+    margin-bottom: 12px;
+}
+
+.statement-upload button {
+    background: #6366f1;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.statement-upload button:hover {
+    background: #4f46e5;
+}
+
+.status-text {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #475569;
+}
+
+
+.preview-box {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f9fafb;
+    border-radius: 10px;
+    margin-bottom: 30px;
+}
+
+.preview-box table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.preview-box th, .preview-box td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.preview-box th {
+    background: #eef2ff;
+}
+
+.hidden {
+    display: none;
+}
+
+#confirmImportBtn {
+    margin-top: 12px;
+    padding: 10px 16px;
+    background: #4f46e5;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+#expenseForm {
+    border-top: 1px dashed #e5e7eb;
+    padding-top: 25px;
+}
