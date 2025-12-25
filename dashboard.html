@@ -64,6 +64,9 @@
     <ul id="insightList"></ul>
 </section>
 
+
+
+
 <!-- QUICK ACTIONS -->
 
 <h2 class="section-title">⚡ Quick Actions</h2>
@@ -83,6 +86,34 @@
 <main>
     <section class="expense-section">
     <h2>Track Your Expenses</h2>
+    <section class="statement-upload">
+    <h2>🏦 Upload Bank Statement</h2>
+    <p class="hint">
+        Upload your bank statement (CSV or PDF) to auto-analyze your spending.
+    </p>
+
+    <input type="file" id="statementInput" accept=".csv,.pdf" />
+    <button id="uploadStatementBtn">Analyze Statement</button>
+
+    <p id="uploadStatus" class="status-text"></p>
+</section>
+<div id="previewSection" class="preview-box hidden">
+    <h3>📄 Transaction Preview</h3>
+
+    <table id="previewTable">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Type</th>
+            </tr>
+        </thead>
+        <tbody id="previewBody"></tbody>
+    </table>
+
+    <button id="confirmImportBtn">✅ Confirm Import</button>
+</div>
 
     <form id="expenseForm">
         <input type="text" id="expenseTitle" placeholder="Expense title (e.g. Food)" required />
@@ -177,8 +208,15 @@
     </div>
 </div>
 
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+<script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
+</script>
+
 <script src="dashboard.js"></script>
+
 
 </body>
 </html>
-
