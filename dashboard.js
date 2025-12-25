@@ -476,7 +476,10 @@ quickViewInvestments?.addEventListener("click", () => {
     window.location.href = "investments.html";
 });
 
-
+window.logout = function () {
+    sessionStorage.removeItem("loggedInUser");
+    window.location.href = "signin.html";
+};
 
 });
 
