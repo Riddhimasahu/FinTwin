@@ -46,6 +46,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const quickViewInvestments = document.getElementById("quickViewInvestments");
     const incomeKey = `income_${user.email}`;
 
+
+
 quickViewInvestments?.addEventListener("click", () => {
     window.location.href = "investments.html";
 });
@@ -90,6 +92,575 @@ let goals = JSON.parse(localStorage.getItem(goalsKey)) || [];
     /* ===============================
        5️⃣ HELPERS
     =============================== */
+    function parseCSV(text) {
+    const lines = text
+        .replace(/\r/g, "")
+        .split("\n")
+        .map(l => l.trim())
+        .filter(Boolean);
+
+    const rows = [];
+
+    lines.forEach((line, index) => {
+
+        // Skip header row
+        if (index === 0 && line.toLowerCase().includes("date")) return;
+
+        const cols = line.includes(";")
+            ? line.split(";")
+            : line.split(",");
+
+        if (cols.length < 3) return;
+
+        const date = cols[0]?.trim();
+        const description = cols[1]?.replace(/"/g, "").trim();
+
+        // 🔥 FIX: CLEAN AMOUNT PROPERLY
+        let amountStr = cols.slice(2).join(""); // handles commas in amount
+        amountStr = amountStr
+            .replace(/₹/g, "")
+            .replace(/,/g, "")
+            .replace(/"/g, "")
+            .trim();
+
+        const rawAmount = parseFloat(amountStr);
+
+        if (!date || !description || isNaN(rawAmount)) return;
+
+        rows.push({
+            date,
+            description,
+            amount: Math.abs(rawAmount),
+            type: rawAmount < 0 ? "Expense" : "Income",
+            category: autoCategorize(description)
+        });
+    });
+
+    console.log("✅ Parsed CSV rows:", rows);
+    return rows;
+}
+
+
+
+function autoCategorize(desc) {
+    desc = desc.toLowerCase();
+
+    if (desc.includes("food") || desc.includes("restaurant")) return "Food";
+    if (desc.includes("uber") || desc.includes("ola")) return "Travel";
+    if (desc.includes("amazon") || desc.includes("flipkart")) return "Shopping";
+    if (desc.includes("rent")) return "Rent";
+    if (desc.includes("netflix") || desc.includes("spotify")) return "Subscriptions";
+
+    return "Others";
+}
+function importTransactions(transactions) {
+    transactions.forEach(txn => {
+        if (txn.type !== "Expense") return;
+
+        expenses.push({
+            title: txn.description,
+            amount: txn.amount,
+            category: txn.category,
+            date: txn.date
+        });
+    });
+
+    localStorage.setItem(expenseKey, JSON.stringify(expenses));
+    renderExpenses();
+}
+
+let extractedTransactions = [];
+
+document
+.getElementById("uploadStatementBtn")
+.addEventListener("click", () => {
+
+    const fileInput = document.getElementById("statementInput");
+    const file = fileInput.files[0];
+
+    if (!file) {
+        alert("Please upload a CSV or PDF file");
+        return;
+    }
+
+    console.log("📄 Uploaded file:", file.name, file.type);
+
+    const fileName = file.name.toLowerCase();
+    const status = document.getElementById("uploadStatus");
+
+    if (
+        file.type === "text/csv" ||
+        fileName.includes(".csv")
+    ) {
+        const reader = new FileReader();
+
+        reader.onload = () => {
+            console.log("📄 CSV file read successfully");
+            extractedTransactions = parseCSV(reader.result);
+            console.log("✅ Parsed CSV rows:", extractedTransactions);
+            showPreview(extractedTransactions);
+            status.innerText = "✅ CSV parsed successfully";
+        };
+
+        reader.readAsText(file);
+
+    } else if (
+        file.type === "application/pdf" ||
+        fileName.includes(".pdf")
+    ) {
+        status.innerText = "📄 Extracting PDF transactions...";
+        parsePDF(file);
+    } else {
+        alert("Unsupported file format");
+    }
+});
+
+
+function showPreview(transactions) {
+    const section = document.getElementById("previewSection");
+    const tbody = document.querySelector("#previewTable tbody");
+
+    tbody.innerHTML = "";
+
+    transactions.slice(0, 20).forEach(txn => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>${txn.date}</td>
+            <td>${txn.description}</td>
+            <td>₹${txn.amount}</td>
+            <td>${txn.type}</td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    section.classList.remove("hidden");
+
+    // ✅ GENERATE AI SUMMARY HERE
+    const aiText = generateAISpendingSummary(transactions);
+    document.getElementById("aiSummaryText").innerText = aiText;
+}
+
+
+
+document
+.getElementById("confirmImportBtn")
+.addEventListener("click", () => {
+
+    importTransactions(extractedTransactions);
+
+    // ✅ Re-run AI after final import
+    const aiText = generateAISpendingSummary(extractedTransactions);
+    document.getElementById("aiSummaryText").innerText = aiText;
+
+    alert("🎉 Transactions imported successfully!");
+    document.getElementById("previewSection").classList.add("hidden");
+});
+
+async function parsePDF(file) {
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        const typedArray = new Uint8Array(arrayBuffer);
+
+        const pdf = await pdfjsLib.getDocument({
+            data: typedArray
+        }).promise;
+
+        let fullText = "";
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+
+            textContent.items.forEach(item => {
+                fullText += item.str + "\n";
+            });
+        }
+
+        console.log("📄 Extracted PDF Text:", fullText);
+
+        extractedTransactions = extractTransactionsFromText(fullText);
+
+        console.log("✅ Parsed PDF rows:", extractedTransactions);
+
+        showPreview(extractedTransactions);
+        document.getElementById("uploadStatus").innerText =
+            "✅ PDF parsed successfully";
+
+    } catch (err) {
+        console.error("❌ PDF parsing failed:", err);
+        alert("Unable to read PDF. Please upload a text-based bank statement.");
+    }
+}
+
+function extractTransactionsFromText(text) {
+    const lines = text
+        .split("\n")
+        .map(l => l.trim())
+        .filter(Boolean);
+
+    const transactions = [];
+
+    for (let i = 0; i < lines.length; i++) {
+
+        // 1️⃣ Match date
+        const dateMatch = lines[i].match(/\d{2}-\d{2}-\d{4}/);
+        if (!dateMatch) continue;
+
+        const date = dateMatch[0];
+
+        // 2️⃣ Next line → description
+        const description = lines[i + 1] || "";
+
+        // 3️⃣ Next numeric value → amount
+        let amount = null;
+        for (let j = i + 2; j < i + 5; j++) {
+            if (!lines[j]) continue;
+
+            const clean = lines[j].replace(/[₹,]/g, "");
+            if (!isNaN(clean)) {
+                amount = parseFloat(clean);
+                break;
+            }
+        }
+
+        if (!description || amount === null) continue;
+
+        // 4️⃣ Decide type
+        const isIncome =
+            description.toLowerCase().includes("credit") ||
+            description.toLowerCase().includes("salary") ||
+            description.toLowerCase().includes("interest") ||
+            description.toLowerCase().includes("payment");
+
+        transactions.push({
+            date,
+            description,
+            amount: Math.abs(amount),
+            type: isIncome ? "Income" : "Expense",
+            category: autoCategorize(description)
+        });
+    }
+
+    console.log("✅ Parsed PDF rows:", transactions);
+    return transactions;
+}
+
+function autoCategorize(description) {
+    description = description.toLowerCase();
+
+    if (description.includes("amazon") || description.includes("flipkart"))
+        return "Shopping";
+    if (description.includes("zomato") || description.includes("swiggy"))
+        return "Food";
+    if (description.includes("uber") || description.includes("ola"))
+        return "Transport";
+    if (description.includes("salary"))
+        return "Income";
+
+    return "Others";
+}
+function generateAISpendingSummary(transactions) {
+
+    if (!transactions || transactions.length === 0) {
+        return "No transaction data available for analysis.";
+    }
+
+    let income = 0;
+    let expense = 0;
+    const categoryTotals = {};
+
+    transactions.forEach(tx => {
+        if (tx.type === "Income") {
+            income += tx.amount;
+        } else {
+            expense += tx.amount;
+            categoryTotals[tx.category] =
+                (categoryTotals[tx.category] || 0) + tx.amount;
+        }
+    });
+
+    const savings = income - expense;
+
+    // 🔍 Find highest spending category
+    let topCategory = "";
+    let maxSpent = 0;
+
+    for (let cat in categoryTotals) {
+        if (categoryTotals[cat] > maxSpent) {
+            maxSpent = categoryTotals[cat];
+            topCategory = cat;
+        }
+    }
+
+    // 🧠 AI-style reasoning
+    let summary = "";
+
+    summary += `Your total income is ₹${income.toFixed(0)}, `;
+    summary += `while your total expenses are ₹${expense.toFixed(0)}. `;
+
+    if (savings > 0) {
+        summary += `You managed to save ₹${savings.toFixed(0)} this period. `;
+    } else {
+        summary += `You are spending more than your income. `;
+    }
+
+    if (topCategory) {
+        const percent = ((maxSpent / expense) * 100).toFixed(0);
+        summary += `Most of your money (${percent}%) was spent on ${topCategory}. `;
+    }
+
+    // 🎯 Actionable advice
+    if (topCategory === "Food") {
+        summary += "Reducing outside food expenses by even 20% can improve your savings significantly.";
+    } else if (topCategory === "Shopping") {
+        summary += "Try applying a 24-hour rule before making non-essential purchases.";
+    } else if (savings < 0) {
+        summary += "Consider setting a monthly budget to regain financial control.";
+    } else {
+        summary += "You are maintaining healthy financial habits. Keep it up!";
+    }
+
+    return summary;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    const fileInput = document.getElementById("statementUpload");
+    const previewBody = document.getElementById("previewBody");
+    const confirmBtn = document.getElementById("confirmImport");
+
+    let parsedTransactions = [];
+
+    fileInput.addEventListener("change", () => {
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        console.log("📄 Uploaded file:", file.name, file.type);
+
+        previewBody.innerHTML = "";
+        parsedTransactions = [];
+        confirmBtn.disabled = true;
+
+        if (file.type === "text/csv") {
+            parseCSV(file);
+        } else {
+            alert("Only CSV supported for now");
+        }
+    });
+
+    function parseCSV(text) {
+    console.log("📄 RAW CSV TEXT ↓↓↓");
+    console.log(text);
+
+    // Remove BOM + normalize minus
+    text = text
+        .replace(/\uFEFF/g, "")
+        .replace(/–/g, "-");
+
+    const lines = text
+        .split(/\r?\n/)
+        .map(l => l.trim())
+        .filter(Boolean);
+
+    if (lines.length === 0) return [];
+
+    // 🔍 AUTO-DETECT DELIMITER
+    let delimiter = ",";
+    if (lines[0].includes("\t")) delimiter = "\t";
+    else if (lines[0].includes(";")) delimiter = ";";
+
+    console.log("🧩 Detected delimiter:", JSON.stringify(delimiter));
+
+    const rows = [];
+
+    lines.forEach((line, index) => {
+
+        // Skip header
+        if (index === 0 && /date/i.test(line)) return;
+
+        const cols = line.split(delimiter).map(c => c.trim());
+
+        if (cols.length < 2) return;
+
+        const date = cols[0].replace(/"/g, "");
+
+        let description = "";
+        let amount = null;
+
+        cols.forEach(col => {
+            let v = col
+                .replace(/₹|,/g, "")
+                .replace(/"/g, "")
+                .trim();
+
+            // (123.45) format
+            if (/^\(\d+(\.\d+)?\)$/.test(v)) {
+                v = "-" + v.replace(/[()]/g, "");
+            }
+
+            if (!isNaN(v) && v !== "") {
+                amount = parseFloat(v);
+            } else {
+                description += " " + col;
+            }
+        });
+
+        if (!date || amount === null) return;
+
+        rows.push({
+            date,
+            description: description.trim(),
+            amount: Math.abs(amount),
+            type: amount < 0 ? "Expense" : "Income"
+        });
+    });
+
+    console.log("✅ Parsed CSV rows:", rows);
+    return rows;
+}
+
+async function handlePDF(file) {
+    console.log("📘 Parsing PDF...");
+
+    const arrayBuffer = await file.arrayBuffer();
+    const loadingTask = pdfjsLib.getDocument({
+  data: typedArray,
+  disableWorker: false
+});
+
+   try {
+  const pdf = await pdfjsLib.getDocument({
+    data: typedArray,
+    disableWorker: false
+  }).promise;
+  // normal parsing
+} catch (e) {
+  console.warn("⚠️ Worker failed, using fallback", e);
+
+  const pdf = await pdfjsLib.getDocument({
+    data: typedArray,
+    disableWorker: true
+  }).promise;
+}
+
+
+
+    let fullText = "";
+
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const content = await page.getTextContent();
+
+        const pageText = content.items
+            .map(item => item.str)
+            .join(" ");
+
+        fullText += "\n" + pageText;
+    }
+
+    console.log("📄 Extracted PDF text ↓↓↓");
+    console.log(fullText);
+
+    const rows = parsePDFText(fullText);
+    console.log("✅ Parsed PDF rows:", rows);
+
+    renderTransactionPreview(rows);
+}
+function parsePDFText(text) {
+    const lines = text
+        .split(/\n/)
+        .map(l => l.trim())
+        .filter(Boolean);
+
+    const transactions = [];
+
+    lines.forEach(line => {
+
+        // Detect date (dd-mm-yyyy or dd/mm/yyyy)
+        const dateMatch = line.match(/(\d{2}[\/\-]\d{2}[\/\-]\d{4})/);
+        if (!dateMatch) return;
+
+        // Detect amount
+        const amountMatch = line.match(/(-?\(?₹?\d{1,3}(?:,\d{3})*(?:\.\d{2})\)?)/);
+        if (!amountMatch) return;
+
+        let amountStr = amountMatch[0]
+            .replace(/[₹,]/g, "")
+            .replace(/[()]/g, "");
+
+        let amount = parseFloat(amountStr);
+        if (isNaN(amount)) return;
+
+        const type = amount < 0 ? "Expense" : "Income";
+
+        const description = line
+            .replace(dateMatch[0], "")
+            .replace(amountMatch[0], "")
+            .trim();
+
+        transactions.push({
+            date: dateMatch[0],
+            description,
+            amount: Math.abs(amount),
+            type
+        });
+    });
+
+    return transactions;
+}
+document.getElementById("statementFile").addEventListener("change", e => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    console.log("📄 Uploaded file:", file.name, file.type);
+
+    if (file.type === "text/csv") {
+        const reader = new FileReader();
+        reader.onload = e => {
+            const rows = parseCSV(e.target.result);
+            renderTransactionPreview(rows);
+        };
+        reader.readAsText(file);
+    }
+
+    else if (file.type === "application/pdf") {
+        handlePDF(file);
+    }
+
+    else {
+        alert("Unsupported file type");
+    }
+});
+
+
+
+
+    function renderPreview(transactions) {
+        previewBody.innerHTML = "";
+
+        transactions.forEach(tx => {
+            const row = document.createElement("tr");
+
+            row.innerHTML = `
+                <td>${tx.date}</td>
+                <td>${tx.description}</td>
+                <td>₹${tx.amount}</td>
+                <td>${tx.type}</td>
+            `;
+
+            previewBody.appendChild(row);
+        });
+
+        if (transactions.length > 0) {
+            confirmBtn.disabled = false;
+        }
+    }
+
+});
+
+
+
+
     function getUserIncome() {
     const data = JSON.parse(localStorage.getItem(incomeKey));
     return data?.monthlyIncome || 0;
