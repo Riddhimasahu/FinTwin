@@ -44,6 +44,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const overspendAlert = document.getElementById("overspendAlert");
 
     const quickViewInvestments = document.getElementById("quickViewInvestments");
+    const incomeKey = `income_${user.email}`;
 
 quickViewInvestments?.addEventListener("click", () => {
     window.location.href = "investments.html";
@@ -55,7 +56,7 @@ quickViewInvestments?.addEventListener("click", () => {
     =============================== */
     const expenseKey = `expenses_${userEmail}`;
     const budgetKey = `budget_${userEmail}`;
-    const incomeKey = `income_${userEmail}`;
+    // const incomeKey = `income_${userEmail}`;
 
     let expenses = JSON.parse(localStorage.getItem(expenseKey)) || [];
     let expenseChart = null;
@@ -90,8 +91,10 @@ let goals = JSON.parse(localStorage.getItem(goalsKey)) || [];
        5️⃣ HELPERS
     =============================== */
     function getUserIncome() {
-        return Number(localStorage.getItem(incomeKey)) || 0;
-    }
+    const data = JSON.parse(localStorage.getItem(incomeKey));
+    return data?.monthlyIncome || 0;
+}
+
 
     function getTotalExpenses() {
         return expenses.reduce((sum, e) => sum + Number(e.amount), 0);
@@ -183,14 +186,20 @@ window.addMoneyToGoal = addMoneyToGoal;
        6️⃣ SUMMARY CARDS
     =============================== */
     function updateSummaryCards() {
-        const income = getUserIncome();
-        const spent = getTotalExpenses();
-        const savings = income - spent;
+    const income = getUserIncome();
+    const spent = getTotalExpenses();
+    const savings = income - spent;
 
-        document.getElementById("incomeAmount").innerText = `₹${income}`;
-        document.getElementById("expenseAmount").innerText = `₹${spent}`;
-        document.getElementById("savingsAmount").innerText = `₹${savings}`;
-    }
+    document.getElementById("incomeAmount").innerText =
+        `₹${income.toLocaleString()}`;
+
+    document.getElementById("expenseAmount").innerText =
+        `₹${spent.toLocaleString()}`;
+
+    document.getElementById("savingsAmount").innerText =
+        `₹${savings.toLocaleString()}`;
+}
+
 
     /* ===============================
        7️⃣ RENDER EXPENSES
@@ -219,6 +228,7 @@ window.addMoneyToGoal = addMoneyToGoal;
         updateLowerSummaryCards();
         updateSummaryCards();
         generateSmartInsights();
+
 
     }
 
@@ -480,6 +490,41 @@ window.logout = function () {
     sessionStorage.removeItem("loggedInUser");
     window.location.href = "signin.html";
 };
+
+window.openIncomeModal = function () {
+    document.getElementById("incomeModal").classList.remove("hidden");
+
+    const savedIncome = JSON.parse(localStorage.getItem(incomeKey));
+    if (savedIncome) {
+        document.getElementById("incomeInput").value = savedIncome.monthlyIncome;
+    }
+};
+
+window.closeIncomeModal = function () {
+    document.getElementById("incomeModal").classList.add("hidden");
+};
+
+window.saveIncome = function () {
+    const income = Number(document.getElementById("incomeInput").value);
+
+    if (!income || income <= 0) {
+        alert("Please enter a valid income");
+        return;
+    }
+
+    localStorage.setItem(
+        incomeKey,
+        JSON.stringify({ monthlyIncome: income })
+    );
+
+    closeIncomeModal();
+
+    updateSummaryCards();
+    generateSmartInsights();
+};
+
+
+
 
 });
 
